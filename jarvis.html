@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS AI Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a6bff;
+            --secondary-color: #00c6ff;
+            --text-color: #333;
+            --light-bg: #f5f7fa;
+            --assistant-bubble: linear-gradient(135deg, #4a6bff, #00c6ff);
+            --user-bubble: #e3f2fd;
+            --error-color: #ff4757;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #4a6bff, #00c6ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-bubble);
+            color: var(--text-color);
+            border-bottom-right-radius: 5px;
+        }
+
+        .assistant-message {
+            align-self: flex-start;
+            background: var(--assistant-bubble);
+            color: white;
+            border-bottom-left-radius: 5px;
+        }
+
+        .assistant-message a {
+            color: #ffffff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: #f0f4f8;
+            border-top: 1px solid #e0e6ed;
+        }
+
+        .mic-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--assistant-bubble);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(74, 107, 255, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .mic-icon:hover {
+            transform: scale(1.05);
+        }
+
+        .mic-icon.listening {
+            animation: pulse 1.5s infinite;
+        }
+
+        .mic-icon.problem {
+            background: var(--error-color);
+            animation: shake 0.5s;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(74, 107, 255, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(74, 107, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 107, 255, 0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .mic-icon i {
+            font-size: 20px;
+            color: white;
+        }
+
+        .rotate {
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .note-area {
+            display: none;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+
+        .note-area textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+        }
+
+        .note-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .note-actions button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .save-note {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .cancel-note {
+            background-color: #f0f0f0;
+            color: #666;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .permission-prompt {
+            display: none;
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px auto;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .permission-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .chat-container {
+                border-radius: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .message {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>JARVIS AI Assistant</h1>
+        <p>Your personal voice-controlled assistant</p>
+    </div>
+
+    <div class="permission-prompt" id="permission-prompt">
+        <p>JARVIS needs microphone access to work. Please allow microphone permissions.</p>
+        <button class="permission-btn" id="enable-mic">Enable Microphone</button>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <div class="message assistant-message">
+                Hello! I'm JARVIS, your AI assistant. Say "Hey Jarvis" or tap the mic to begin.
+            </div>
+        </div>
+
+        <div class="status" id="status">
+            Say "Hey Jarvis" to activate or click the mic
+        </div>
+
+        <div class="note-area" id="note-area">
+            <textarea id="note-text" placeholder="Start speaking or typing your note..."></textarea>
+            <div class="note-actions">
+                <button class="cancel-note" id="cancel-note">Cancel</button>
+                <button class="save-note" id="save-note">Save Note</button>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="mic-icon" id="mic-icon">
+                <i class="fas fa-microphone"></i>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const micIcon = document.getElementById('mic-icon');
+            const statusElement = document.getElementById('status');
+            const noteArea = document.getElementById('note-area');
+            const noteText = document.getElementById('note-text');
+            const saveNoteBtn = document.getElementById('save-note');
+            const cancelNoteBtn = document.getElementById('cancel-note');
+            const permissionPrompt = document.getElementById('permission-prompt');
+            const enableMicBtn = document.getElementById('enable-mic');
+
+            let recognition;
+            let isListening = false;
+            let wakeWordDetected = false;
+            let noteMode = false;
+            let isSpeaking = false;
+            let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+            let notes = JSON.parse(localStorage.getItem('notes')) || [];
+            let lastResponse = '';
+            let permissionGranted = false;
+
+            // Check if we've already asked for permission
+            if (localStorage.getItem('micPermissionAsked') === 'true') {
+                permissionPrompt.style.display = 'none';
+            } else {
+                permissionPrompt.style.display = 'block';
+            }
+
+            // Indian English variations
+            const indianVariations = {
+                'hey jarvis': ['a jarvis', 'hey javis', 'jarvis', 'hi jarvis', 'hay jarvis', 'hey jarves'],
+                'open google': ['open gugal', 'open goggle', 'open googal'],
+                'what is': ['wat is', 'wats', 'what'],
+                'remind me': ['remind', 'remind to'],
+                'take a note': ['make a note', 'create note', 'take note', 'new note'],
+                'how are you': ['how r u', 'how you'],
+                'thank you': ['thank u', 'thanks'],
+                'goodbye': ['bye', 'good bye'],
+                'open youtube': ['open utube', 'open you tube'],
+                'time is it': ['time', 'what time'],
+                'today date': ['date', 'what date'],
+                'calculate': ['calc', 'compute']
+            };
+
+            // Website mappings
+            const websiteMappings = {
+                'youtube': 'https://www.youtube.com',
+                'instagram': 'https://www.instagram.com',
+                'facebook': 'https://www.facebook.com',
+                'chatgpt': 'https://chat.openai.com',
+                'figma': 'https://www.figma.com',
+                'gmail': 'https://mail.google.com',
+                'grok': 'https://grok.com',
+                'twitter': 'https://x.com',
+                'wikipedia': 'https://www.wikipedia.org',
+                'portfolio': 'https://your-portfolio-url.com', // Replace with actual URL
+                'resume': 'https://your-resume-url.com' // Replace with actual URL
+            };
+
+            // Initialize Speech Recognition
+            function initSpeechRecognition() {
+                try {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (!SpeechRecognition) {
+                        throw new Error('Speech recognition not supported');
+                    }
+                    
+                    recognition = new SpeechRecognition();
+                    recognition.continuous = true;
+                    recognition.interimResults = true;
+                    recognition.lang = 'en-IN';
+
+                    recognition.onstart = function() {
+                        isListening = true;
+                        micIcon.classList.add('listening');
+                        statusElement.textContent = "Listening...";
+                    };
+
+                    recognition.onend = function() {
+                        isListening = false;
+                        micIcon.classList.remove('listening');
+                        if (!wakeWordDetected) {
+                            statusElement.textContent = 'Say "Hey Jarvis" to activate or click the mic';
+                        }
+                    };
+
+                    recognition.onerror = function(event) {
+                        console.error('Speech recognition error:', event.error);
+                        handleRecognitionError(event.error);
+                    };
+
+                    recognition.onresult = function(event) {
+                        let finalTranscript = '';
+                        let interimTranscript = '';
+                        
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcript = event.results[i][0].transcript.trim();
+                            const confidence = event.results[i][0].confidence;
+                            console.log(`Transcript: ${transcript}, Confidence: ${confidence}, IsFinal: ${event.results[i].isFinal}`);
+                            if (event.results[i].isFinal && confidence > 0.5) {
+                                finalTranscript += transcript + ' ';
+                            } else {
+                                interimTranscript += transcript + ' ';
+                            }
+                        }
+                        finalTranscript = finalTranscript.trim();
+                        interimTranscript = interimTranscript.trim();
+
+                        if (finalTranscript) {
+                            finalTranscript = normalizeIndianEnglish(finalTranscript);
+
+                            if (!wakeWordDetected && /hey\s*jarvis/i.test(finalTranscript)) {
+                                wakeWordDetected = true;
+                                finalTranscript = finalTranscript.replace(/hey\s*jarvis/i, '').trim();
+                                if (!finalTranscript) {
+                                    addMessage('assistant', "Yes, how can I help you?");
+                                    speak("Yes, how can I help you?");
+                                    return;
+                                }
+                            }
+
+                            if ((wakeWordDetected || micIcon.classList.contains('manual-activate')) && !isSpeaking) {
+                                if (noteMode) {
+                                    noteText.value = finalTranscript || noteText.value;
+                                    addMessage('user', finalTranscript);
+                                } else {
+                                    addMessage('user', finalTranscript);
+                                    processCommand(finalTranscript);
+                                }
+                            }
+                        } else if (noteMode && interimTranscript) {
+                            noteText.value = normalizeIndianEnglish(interimTranscript);
+                        }
+                    };
+
+                } catch (e) {
+                    console.error('Speech recognition not supported:', e);
+                    addMessage('assistant', "Sorry, your browser doesn't support speech recognition. Try Chrome or Edge.");
+                    micIcon.style.display = 'none';
+                    statusElement.textContent = "Speech recognition not supported";
+                }
+            }
+
+            // Normalize Indian English variations
+            function normalizeIndianEnglish(text) {
+                text = text.toLowerCase();
+                for (const [standard, variations] of Object.entries(indianVariations)) {
+                    for (const variation of variations) {
+                        if (text.includes(variation)) {
+                            text = text.replace(variation, standard);
+                        }
+                    }
+                }
+                return text;
+            }
+
+            // Handle recognition errors
+            function handleRecognitionError(error) {
+                const errors = {
+                    'no-speech': 'No speech detected. Please try again.',
+                    'audio-capture': 'Microphone not found. Please check your device.',
+                    'not-allowed': 'Microphone access denied. Please allow microphone permissions.',
+                    'language-not-supported': 'Indian English not supported. Switching to US English...'
+                };
+
+                const message = errors[error] || `Error: ${error}. Please try again.`;
+                addMessage('assistant', message);
+                speak(message);
+                
+                micIcon.classList.add('problem');
+                setTimeout(() => micIcon.classList.remove('problem'), 1000);
+
+                if (error === 'language-not-supported') {
+                    recognition.lang = 'en-US';
+                    setTimeout(() => recognition.start(), 1000);
+                } else if (error === 'not-allowed') {
+                    permissionPrompt.style.display = 'block';
+                }
+            }
+
+            // Add message to chat
+            function addMessage(sender, text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(sender === 'user' ? 'user-message' : 'assistant-message');
+                messageDiv.innerHTML = text;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Text to speech
+            function speak(text) {
+                isSpeaking = true;
+                micIcon.classList.add('rotate');
+                
+                if (isListening && recognition) {
+                    recognition.stop();
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.lang = 'en-IN';
+                
+                utterance.onend = function() {
+                    isSpeaking = false;
+                    micIcon.classList.remove('rotate');
+                    if (wakeWordDetected || micIcon.classList.contains('manual-activate')) {
+                        setTimeout(() => {
+                            if (!isListening) {
+                                recognition.start();
+                            }
+                        }, 500);
+                    }
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                lastResponse = text;
+            }
+
+            // Open new tab with popup handling
+            function openNewTab(url) {
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                if (!newWindow) {
+                    const message = `Popup blocked. Please allow popups or <a href="${url}" target="_blank">click here</a> to open.`;
+                    addMessage('assistant', message);
+                    speak("Popup blocked. Please allow popups or check the chat for a link.");
+                }
+            }
+
+            // Evaluate mathematical expressions
+            function calculateExpression(expression) {
+                try {
+                    // Sanitize expression to prevent code injection
+                    expression = expression.replace(/[^0-9+\-*/%.() ]/g, '');
+                    const result = eval(expression); // Note: eval is used for simplicity; consider math.js for production
+                    return isFinite(result) ? result : "Invalid calculation.";
+                } catch (e) {
+                    return "Sorry, I couldn't calculate that. Please try again.";
+                }
+            }
+
+            // Process user commands
+            function processCommand(command) {
+                command = command.toLowerCase().trim();
+                let response = '';
+                let actionTaken = false;
+
+                // 1. Basic Questions/Conversation
+                if (command.includes('hello') || command.includes('hi')) {
+                    response = "Hello! How can I assist you today?";
+                } else if (command.includes('how are you')) {
+                    response = "I'm doing great, thanks for asking! How about you?";
+                } else if (command.includes('what is your name')) {
+                    response = "I'm JARVIS, your personal AI assistant.";
+                } else if (command.includes('thank you')) {
+                    response = "You're welcome!";
+                } else if (command.includes('goodbye') || command.includes('bye')) {
+                    response = "Goodbye! Have a great day!";
+                    wakeWordDetected = false;
+                    if (isListening) recognition.stop();
+                    actionTaken = true;
+                }
+                // 2. Knowledge & Search Queries
+                else if (/^(what is|who is|where is|search for|find|google|search google|google for)/.test(command)) {
+                    let searchQuery = command.replace(/^(what is|who is|where is|search for|find|google|search google|google for)/, '').trim();
+                    if (!searchQuery && command.includes('google')) {
+                        response = "Opening Google...";
+                        openNewTab('https://www.google.com');
+                        actionTaken = true;
+                    } else if (searchQuery) {
+                        response = `Searching for "${searchQuery}". Opening in your browser...`;
+                        openNewTab(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`);
+                        actionTaken = true;
+                    } else {
+                        response = "Please specify what to search for.";
+                    }
+                } else if (command.includes('define')) {
+                    const word = command.replace('define', '').trim();
+                    if (word) {
+                        response = `Looking up definition for "${word}". Opening in your browser...`;
+                        openNewTab(`https://www.merriam-webster.com/dictionary/${encodeURIComponent(word)}`);
+                        actionTaken = true;
+                    } else {
+                        response = "Please specify a word to define.";
+                    }
+                }
+                // 3. Website/App Opening
+                else if (command.includes('open')) {
+                    const site = Object.keys(websiteMappings).find(key => command.includes(key));
+                    if (site) {
+                        response = `Opening ${site.charAt(0).toUpperCase() + site.slice(1)}...`;
+                        openNewTab(websiteMappings[site]);
+                        actionTaken = true;
+                    } else {
+                        const siteName = command.replace('open', '').trim();
+                        if (siteName) {
+                            response = `Trying to open ${siteName}. Opening a search...`;
+                            openNewTab(`https://www.google.com/search?q=${encodeURIComponent(siteName)}`);
+                            actionTaken = true;
+                        } else {
+                            response = "Please specify a website to open.";
+                        }
+                    }
+                }
+                // 4. Media & Image Search
+                else if (/(search image|show pictures|find photos)/.test(command)) {
+                    const subject = command.replace(/(search image|show pictures|find photos)/, '').trim();
+                    if (subject) {
+                        response = `Searching for images of "${subject}". Opening in your browser...`;
+                        openNewTab(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(subject)}`);
+                        actionTaken = true;
+                    } else {
+                        response = "Please specify what images to search for.";
+                    }
+                }
+                // 5. Finance & Stocks (Placeholder)
+                else if (/(stock price|nse|bse)/.test(command)) {
+                    const company = command.replace(/(stock price|nse|bse|show details)/, '').trim();
+                    if (company) {
+                        response = `Looking up stock price for ${company}. Opening in your browser...`;
+                        openNewTab(`https://www.google.com/finance/quote/${encodeURIComponent(company)}`);
+                        actionTaken = true;
+                    } else {
+                        response = "Please specify a company name.";
+                    }
+                }
+                // 6. Reminders & Alarms
+                else if (command.includes('remind me')) {
+                    const reminderMatch = command.match(/remind me (in (\d+) (minutes?|hours?)|tomorrow at ([\d:]+ ?[ap]m)) to (.+)/i);
+                    if (reminderMatch) {
+                        const action = reminderMatch[5];
+                        let timeMs;
+                        if (reminderMatch[2]) {
+                            const amount = parseInt(reminderMatch[2]);
+                            const unit = reminderMatch[3].startsWith('minute') ? 60000 : 3600000;
+                            timeMs = amount * unit;
+                        } else {
+                            const timeStr = reminderMatch[4];
+                            const tomorrow = new Date();
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            const [time, period] = timeStr.split(' ');
+                            let [hours, minutes] = time.split(':').map(Number);
+                            if (period.toLowerCase() === 'pm' && hours < 12) hours += 12;
+                            if (period.toLowerCase() === 'am' && hours === 12) hours = 0;
+                            tomorrow.setHours(hours, minutes || 0, 0, 0);
+                            timeMs = tomorrow.getTime() - Date.now();
+                        }
+                        reminders.push({ action, time: Date.now() + timeMs });
+                        localStorage.setItem('reminders', JSON.stringify(reminders));
+                        response = `Reminder set to ${action} in ${reminderMatch[1] || 'tomorrow'}.`;
+                        setTimeout(() => {
+                            addMessage('assistant', `Reminder: ${action}`);
+                            speak(`Reminder: ${action}`);
+                        }, timeMs);
+                        actionTaken = true;
+                    } else {
+                        response = "Please specify when and what to remind you about, e.g., 'remind me in 10 minutes to call John'.";
+                    }
+                } else if (command.includes('set an alarm')) {
+                    response = "Alarm functionality requires server-side integration. Try setting a reminder instead.";
+                }
+                // 7. Notes & Dictation
+                else if (command.includes('take a note')) {
+                    noteMode = true;
+                    noteArea.style.display = 'block';
+                    noteText.focus();
+                    response = "Ready to take your note. Start speaking or typing.";
+                    actionTaken = true;
+                } else if (command.includes('take note')) {
+                    const noteContent = command.replace('take note', '').trim();
+                    if (noteContent) {
+                        notes.push(noteContent);
+                        localStorage.setItem('notes', JSON.stringify(notes));
+                        response = "Note saved: " + noteContent;
+                        actionTaken = true;
+                    }
+                } else if (command.includes('show my notes')) {
+                    if (notes.length) {
+                        response = "Your notes: <br>" + notes.map((note, i) => `${i + 1}. ${note}`).join('<br>');
+                    } else {
+                        response = "You have no saved notes.";
+                    }
+                    actionTaken = true;
+                } else if (/(write an email|compose email|dictate a message)/.test(command)) {
+                    noteMode = true;
+                    noteArea.style.display = 'block';
+                    noteText.focus();
+                    response = "Ready to dictate your message. Start speaking or typing.";
+                    actionTaken = true;
+                }
+                // 8. Time & Date
+                else if (command.includes('time is it')) {
+                    const now = new Date();
+                    response = `The time is ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}.`;
+                    actionTaken = true;
+                } else if (command.includes('today date')) {
+                    const now = new Date();
+                    response = `Today's date is ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+                    actionTaken = true;
+                } else if (command.includes('what day is it')) {
+                    const now = new Date();
+                    response = `Today is ${now.toLocaleDateString('en-US', { weekday: 'long' })}.`;
+                    actionTaken = true;
+                }
+                // 9. Weather (Placeholder)
+                else if (command.includes('weather')) {
+                    const city = command.replace(/(weather in|weather|temperature|will it rain)/, '').trim();
+                    if (city) {
+                        response = `Looking up weather for ${city}. Opening in your browser...`;
+                        openNewTab(`https://www.google.com/search?q=weather+${encodeURIComponent(city)}`);
+                    } else {
+                        response = `Looking up weather. Opening in your browser...`;
+                        openNewTab('https://www.google.com/search?q=weather');
+                    }
+                    actionTaken = true;
+                }
+                // 10. System Commands
+                else if (command.includes('repeat that') || command.includes('say again')) {
+                    response = lastResponse || "I haven't said anything yet.";
+                    actionTaken = true;
+                } else if (command.includes('stop listening')) {
+                    if (isListening) {
+                        recognition.stop();
+                        response = "Stopped listening.";
+                        wakeWordDetected = false;
+                        actionTaken = true;
+                    } else {
+                        response = "I'm not listening right now.";
+                    }
+                } else if (command.includes('clear the chat')) {
+                    chatMessages.innerHTML = '';
+                    response = "Chat cleared.";
+                    actionTaken = true;
+                } else if (command.includes('what can you do')) {
+                    response = "I can help with searches, open websites, set reminders, take notes, tell time, do calculations, and more. Try saying 'open YouTube', 'what is AI', or 'take a note'.";
+                    actionTaken = true;
+                }
+                // 11. Calculations
+                else if (/(calculate|what is|times|square root)/.test(command)) {
+                    let expression = command.replace(/(calculate|what is|times|square root of)/, '').trim();
+                    if (command.includes('square root')) {
+                        const num = parseFloat(expression);
+                        response = num >= 0 ? `The square root of ${num} is ${Math.sqrt(num).toFixed(2)}.` : "Please provide a non-negative number.";
+                    } else if (command.includes('times')) {
+                        const nums = expression.split('times').map(n => parseFloat(n.trim()));
+                        if (nums.length === 2 && nums.every(n => !isNaN(n))) {
+                            response = `${nums[0]} times ${nums[1]} is ${nums[0] * nums[1]}.`;
+                        } else {
+                            response = "Please provide two numbers, e.g., '5 times 10'.";
+                        }
+                    } else {
+                        response = calculateExpression(expression);
+                    }
+                    actionTaken = true;
+                }
+                // 12. File Operations (Placeholder)
+                else if (/(open my documents|show my projects|open my presentation)/.test(command)) {
+                    response = "File operations require server-side integration. Try mapping to a URL or local path.";
+                }
+                // 13. Fun/Entertainment
+                else if (command.includes('tell me a joke')) {
+                    const jokes = ["Why did the scarecrow become a motivational speaker? Because he was outstanding in his field!", "Why can't programmers prefer dark mode? Because the light attracts bugs."];
+                    response = jokes[Math.floor(Math.random() * jokes.length)];
+                    actionTaken = true;
+                } else if (command.includes('sing a song')) {
+                    response = "I'm not much of a singer, but here's a line: 'Twinkle, twinkle, little star...' Want me to continue?";
+                    actionTaken = true;
+                } else if (command.includes('recommend a movie')) {
+                    response = "How about 'Inception'? It's a mind-bending thriller! Want me to search for more movies?";
+                    actionTaken = true;
+                } else if (command.includes('fun fact')) {
+                    response = "Did you know honey never spoils? Archeologists found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still edible!";
+                    actionTaken = true;
+                }
+                // 14. Translation (Placeholder)
+                else if (/(how do you say|translate)/.test(command)) {
+                    response = "Translation requires an API like Google Translate. Try searching for a translation online.";
+                    openNewTab(`https://translate.google.com/?text=${encodeURIComponent(command.replace(/(how do you say|translate)/, '').trim())}`);
+                    actionTaken = true;
+                }
+                // 15. News (Placeholder)
+                else if (command.includes('news')) {
+                    const topic = command.replace(/(latest news|news about|tech headlines)/, '').trim();
+                    response = `Looking up ${topic || 'latest'} news. Opening in your browser...`;
+                    openNewTab(`https://news.google.com/search?q=${encodeURIComponent(topic || 'latest news')}`);
+                    actionTaken = true;
+                }
+                // 16. Advanced Features (Placeholder)
+                else if (command.includes('shopping list') || command.includes('calendar') || command.includes('set a meeting') || command.includes('bookmark')) {
+                    response = "This feature requires server-side integration or a specific API. Try using a search or note instead.";
+                }
+                else {
+                    response = "I'm not sure I understand. Could you rephrase that?";
+                }
+
+                if (!actionTaken) {
+                    addMessage('assistant', response);
+                    speak(response);
+                } else {
+                    setTimeout(() => {
+                        addMessage('assistant', response);
+                        speak(response);
+                    }, 500);
+                }
+
+                wakeWordDetected = false;
+            }
+
+            // Note functionality
+            saveNoteBtn.addEventListener('click', function() {
+                const noteContent = noteText.value.trim();
+                if (noteContent) {
+                    notes.push(noteContent);
+                    localStorage.setItem('notes', JSON.stringify(notes));
+                    addMessage('assistant', "Note saved successfully!");
+                    speak("Note saved successfully!");
+                }
+                noteText.value = '';
+                noteArea.style.display = 'none';
+                noteMode = false;
+            });
+
+            cancelNoteBtn.addEventListener('click', function() {
+                noteText.value = '';
+                noteArea.style.display = 'none';
+                noteMode = false;
+                addMessage('assistant', "Note cancelled.");
+                speak("Note cancelled.");
+            });
+
+            // Manual mic activation
+            micIcon.addEventListener('click', function() {
+                if (!isListening) {
+                    // Check if we have microphone permission
+                    navigator.permissions.query({name: 'microphone'}).then(function(permissionStatus) {
+                        if (permissionStatus.state === 'granted') {
+                            wakeWordDetected = true;
+                            micIcon.classList.add('manual-activate');
+                            recognition.start();
+                        } else {
+                            // Request microphone access
+                            navigator.mediaDevices.getUserMedia({ audio: true })
+                                .then(function(stream) {
+                                    stream.getTracks().forEach(track => track.stop());
+                                    wakeWordDetected = true;
+                                    micIcon.classList.add('manual-activate');
+                                    recognition.start();
+                                    permissionPrompt.style.display = 'none';
+                                    localStorage.setItem('micPermissionAsked', 'true');
+                                })
+                                .catch(function(err) {
+                                    console.error('Microphone access denied:', err);
+                                    addMessage('assistant', "Microphone access is required for voice commands. Please allow microphone permissions.");
+                                    permissionPrompt.style.display = 'block';
+                                });
+                        }
+                    });
+                } else {
+                    recognition.stop();
+                    wakeWordDetected = false;
+                    micIcon.classList.remove('manual-activate');
+                }
+            });
+
+            // Enable microphone button
+            enableMicBtn.addEventListener('click', function() {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                        permissionPrompt.style.display = 'none';
+                        localStorage.setItem('micPermissionAsked', 'true');
+                        addMessage('assistant', "Microphone access granted. You can now use voice commands.");
+                        initSpeechRecognition();
+                    })
+                    .catch(function(err) {
+                        console.error('Microphone access denied:', err);
+                        addMessage('assistant', "Microphone access is required for voice commands. Please allow microphone permissions.");
+                    });
+            });
+
+            // Initialize
+            initSpeechRecognition();
+        });
+    </script>
+</body>
+</html>
